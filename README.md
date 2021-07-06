@@ -278,3 +278,126 @@ $ amplify add api
 
 
 
+GraphQLスキーマ (amplify/backend/api/myapi/schema.graphql) を開き、次のように編集する
+
+```
+type Note @model {
+	id: ID!
+	name: String!
+	description: String
+}
+```
+
+
+
+### APIをデプロイする
+
+APIがローカルで設定されたので、それをデプロイする。
+
+このために、Amplify pushコマンドを実行する
+
+```bash
+$ amplify push --y
+```
+
+これにより、
+
+1. AppSync APIを作成
+2. DynamoDBテーブルを作成
+3. APIのクエリに使用できるsrc/graphqlにあるフォルダにローカルGraphQL操作を行う
+
+
+
+### APIと対話するためのフロントエンドコードを記述する
+
+バックエンドがデプロイされたので、ユーザーがメモを作成・一覧表示・削除できるようにコードを記述する
+
+```jsx
+import React, { useState, useEffect } from 'react';
+import './App.css';
+import { API } from 'aws-amplify';
+import { withAuthenticator, AmplifySignOut } from '@aws-amplify/ui-react';
+import { listNotes } from './graphql/queries';
+import { createNote as createNoteMutation, deleteNote as deleteNoteMutation } from './graphql/mutations';
+
+const initialFormState = { name: '', description: '' }
+
+function App() {
+  const [notes, setNotes] = useState([]);
+  const [formData, setFormData] = useState(initialFormState);
+
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  async function fetchNotes() {
+    const apiData = await API.graphql({ query: listNotes });
+    setNotes(apiData.data.listNotes.items);
+  }
+
+  async function createNote() {
+    if (!formData.name || !formData.description) return;
+    await API.graphql({ query: createNoteMutation, variables: { input: formData } });
+    setNotes([ ...notes, formData ]);
+    setFormData(initialFormState);
+  }
+
+  async function deleteNote({ id }) {
+    const newNotesArray = notes.filter(note => note.id !== id);
+    setNotes(newNotesArray);
+    await API.graphql({ query: deleteNoteMutation, variables: { input: { id } }});
+  }
+
+  return (
+    <div className="App">
+      <h1>My Notes App</h1>
+      <input
+        onChange={e => setFormData({ ...formData, 'name': e.target.value})}
+        placeholder="Note name"
+        value={formData.name}
+      />
+      <input
+        onChange={e => setFormData({ ...formData, 'description': e.target.value})}
+        placeholder="Note description"
+        value={formData.description}
+      />
+      <button onClick={createNote}>Create Note</button>
+      <div style={{marginBottom: 30}}>
+        {
+          notes.map(note => (
+            <div key={note.id || note.name}>
+              <h2>{note.name}</h2>
+              <p>{note.description}</p>
+              <button onClick={() => deleteNote(note)}>Delete note</button>
+            </div>
+          ))
+        }
+      </div>
+      <AmplifySignOut />
+    </div>
+  );
+}
+
+export default withAuthenticator(App);
+```
+
+アプリには3つの主要な機能がある
+
+1. fetchNotes
+
+    この関数は、APIクラスを使用してクエリをGraphQL APIに送信し、メモのリストを取得する
+
+2. createNote
+
+    この関数は、APIクラスを使用してmutationをGraphQL APIに送信する。
+
+    主な違いは、この関数ではGraphQL mutationに必要な変数を渡して、フォームデータで新しいノートを作成できること。
+
+3. deleteNote
+
+    createNoteと同様に、この関数は変数と共にGraphQL mutationを送信するが、作成ではなく削除を行う
+
+
+
+## ストレージを追加する
+
