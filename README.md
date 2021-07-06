@@ -242,6 +242,8 @@ $ npm start
 
 https://miruohotspring.net/blog/aws-exports-build-option/
 
+https://docs.aws.amazon.com/ja_jp/amplify/latest/userguide/how-to-service-role-amplify-console.html
+
 
 
 ## GraphQL APIとデータベースを追加する
