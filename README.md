@@ -238,6 +238,10 @@ $ npm start
 
 最後に、githubにデプロイしてAmplifyコンソールで新しいビルドを開始する。
 
+この際、指示通りにやるとエラーが生じるので、このサイトを参考に何点か修正した。
+
+https://miruohotspring.net/blog/aws-exports-build-option/
+
 
 
 ## GraphQL APIとデータベースを追加する
@@ -251,4 +255,22 @@ $ npm start
 作成するアプリは、ユーザーがメモを作成・削除・一覧表示できるようにするメモアプリ。
 
 
+
+### GraphQL APIとデータベースを作成する
+
+アプリディレクトリのルートから次のコマンドを実行し、GraphQL APIをアプリに追加する
+
+```bash
+$ amplify add api
+? Please select from one of the below mentioned services: GraphQL
+? Provide API name: notesapp
+? Choose the default authorization type for the API: API Key
+? Enter a description for the API key: demo
+? After how many days from now the API key should expire: 7 (or your preferred expiration)
+? Do you want to configure advanced settings for the GraphQL API: No, I am done.
+? Do you have an annotated GraphQL schema?  No
+? Do you want a guided schema creation?  Yes
+? What best describes your project: Single object with fields
+? Do you want to edit the schema now? Yes
+```
 
