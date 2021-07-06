@@ -238,3 +238,7 @@ $ npm start
 
 最後に、githubにデプロイしてAmplifyコンソールで新しいビルドを開始する。
 
+
+
+## GraphQL APIとデータベースを追加する
+
