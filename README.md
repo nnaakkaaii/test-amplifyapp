@@ -401,3 +401,140 @@ export default withAuthenticator(App);
 
 ## ストレージを追加する
 
+メモアプリが機能するようになったので、各メモに画像を関連付ける機能を追加する。
+
+このモジュールでは、Amplify CLIとライブラリを使用して、Amazon S3を利用するストレージサービスを作成する。
+
+次に、GraphQLスキーマを更新し、画像を各メモに関連付ける。
+
+最後にReactアプリを更新して、画像のアップロード、フェッチ、レンダリングを有効にする
+
+
+
+### ストレージサービスを作成する
+
+画像ストレージ機能を追加するには、Amplifyストレージカテゴリを使用する
+
+```bash
+$ amplify add storage
+
+? Please select from one of the below mentioned services: Content
+? Please provide a friendly name for your resource that will be used to label this category in the project: imagestorage
+? Please provide bucket name: <your-unique-bucket-name>
+? Who should have access: Auth users only
+? What kind of access do you want for Authenticated users? create, read, update, delete
+? Do you want to add a Lambda Trigger for your S3 Bucket? N
+
+```
+
+
+
+### GraphQLスキーマを更新する
+
+amplify/backend/api/notesapp/schema.graphqlを開き、次のように更新する
+
+```
+type Note @model {
+  id: ID!
+  name: String!
+  description: String
+  image: String
+}
+```
+
+
+
+### ストレージサービスとAPIの更新をデプロイする
+
+ストレージサービスがローカルで設定され、GraphQLスキーマが更新されたので、Amplify pushコマンドを実行して更新をデプロイする
+
+```bash
+$ amplify push --y
+```
+
+
+
+### Reactアプリを更新する
+
+バックエンドが更新されたので、Reactアプリを更新して、メモ用に画像をアップロードおよび表示する機能を追加する。
+
+1. ストレージクラスをAmplifyインポートに追加する
+
+    ```jsx
+    import { API, Storage } from 'aws-amplify';
+    ```
+
+2. メインのApp関数で、画像のアップロードを処理する新しいonChange関数を作成する
+
+    ```jsx
+    async function onChange(e) {
+      if (!e.target.files[0]) return
+      const file = e.target.files[0];
+      setFormData({ ...formData, image: file.name });
+      await Storage.put(file.name, file);
+      fetchNotes();
+    }
+    ```
+
+3. メモに関連付けられている画像がある場合は、fetchNotes関数を更新して画像を取得する
+
+    ```jsx
+    async function fetchNotes() {
+      const apiData = await API.graphql({ query: listNotes });
+      const notesFromAPI = apiData.data.listNotes.items;
+      await Promise.all(notesFromAPI.map(async note => {
+        if (note.image) {
+          const image = await Storage.get(note.image);
+          note.image = image;
+        }
+        return note;
+      }))
+      setNotes(apiData.data.listNotes.items);
+    }
+    ```
+
+4. 画像がメモに関連付けられている場合は、createNote 関数を更新して、画像をローカル画像配列に追加します。
+
+    ```jsx
+    async function createNote() {
+      if (!formData.name || !formData.description) return;
+      await API.graphql({ query: createNoteMutation, variables: { input: formData } });
+      if (formData.image) {
+        const image = await Storage.get(formData.image);
+        formData.image = image;
+      }
+      setNotes([ ...notes, formData ]);
+      setFormData(initialFormState);
+    }
+    ```
+
+5. returnブロックのフォームにその他の入力を追加する
+
+    ```jsx
+    <input
+      type="file"
+      onChange={onChange}
+    />
+    ```
+
+6. メモ配列をマッピングするときに、画像が存在する場合はそれをレンダリングする
+
+    ```jsx
+    {
+      notes.map(note => (
+        <div key={note.id || note.name}>
+          <h2>{note.name}</h2>
+          <p>{note.description}</p>
+          <button onClick={() => deleteNote(note)}>Delete note</button>
+          {
+            note.image && <img src={note.image} style={{width: 400}} />
+          }
+        </div>
+      ))
+    }
+    ```
+
+
+
+
+
