@@ -242,3 +242,13 @@ $ npm start
 
 ## GraphQL APIとデータベースを追加する
 
+上記の手順でアプリの作成と認証を設定できたので、次はAPIを追加する。
+
+このモジュールでは、Amplify CLIとライブラリを使用してアプリにAPIを追加する。
+
+作成するAPIはGraphQL APIで、Amazon DynamoDB(NoSQL)によってサポートされるAWS AppSyncを利用する。
+
+作成するアプリは、ユーザーがメモを作成・削除・一覧表示できるようにするメモアプリ。
+
+
+
